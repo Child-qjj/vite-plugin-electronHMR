@@ -1,0 +1,28 @@
+{
+  "name": "vite-plugin-electron-hmr",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "dev": "tsc -w",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^8.5.0",
+    "@types/node": "^18.7.15",
+    "rollup": "~2.78.0",
+    "tslib": "^2.4.0",
+    "typescript": "^4.8.2",
+    "vite": "^3.1.0"
+  },
+  "peerDependencies": {
+    "vite": ">=3.0.0"
+  },
+  "dependencies": {
+    "picocolors": "^1.0.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "declaration": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "outDir": "dist",
+    "lib": ["esnext", "dom"],
+    "sourceMap": true,
+    "noEmitOnError": true,
+  },
+  "include": ["src/*", "lib/*","types/*" ]
+}
