@@ -1,14 +1,9 @@
 import { Plugin, ViteDevServer } from "vite";
-import type { UserConfigs } from "../types/configurature";
+import type { UserConfigs } from "./types/configurature";
 // import { doBuild } from "../lib/builder";
-import { createElectronServer } from "../lib/runtimeServer";
+import { createElectronServer } from "./lib/runtimeServer";
 export interface ResolvedOptions {
-  root: string;
-  sourceMap: boolean;
-  isProduction: boolean;
-  cssDevSourcemap: boolean;
-  devServer?: ViteDevServer;
-  devToolsEnabled?: boolean;
+  build: any;
 }
 export default function electron(rawOptions: UserConfigs): Plugin[] {
   let options: ResolvedOptions;
@@ -28,26 +23,11 @@ export default function electron(rawOptions: UserConfigs): Plugin[] {
       name: "vite:electron-runtime-loader",
       apply: "serve",
       configResolved(config) {
-        options = {
-          ...options,
-          root: config.root,
-          sourceMap:
-            config.command === "build" ? !!config.build.sourcemap : true,
-          cssDevSourcemap: config.css?.devSourcemap ?? false,
-          isProduction: config.isProduction,
-          devToolsEnabled:
-            !!config.define!.__VUE_PROD_DEVTOOLS__ || !config.isProduction,
-        };
-      },
-      config(config, env) {
-        config = { ...config, ...{} };
-      },
-      transform(code, id, options) {
-        console.log(id);
+        options = config;
       },
       configureServer(serve) {
         serve.httpServer?.addListener("listening", () => {
-          createElectronServer(serve, null);
+          createElectronServer(serve, options);
         });
       },
     },

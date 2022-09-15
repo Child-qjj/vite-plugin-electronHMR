@@ -2,8 +2,9 @@ import { spawn } from "child_process";
 import { existsSync, readFileSync } from "fs";
 import path from "path";
 import colors from "picocolors";
-import { build as ViteBuild, transformWithEsbuild, ViteDevServer } from "vite";
-import typescript from "@rollup/plugin-typescript";
+import { build as ViteBuild, ViteDevServer } from "vite";
+import { UserConfigs } from "../types/configurature";
+import { loadConfigFile } from "../utils/index";
 const getElectronPath = function () {
   const electronModulePath = path.resolve(
     process.cwd(),
@@ -27,22 +28,17 @@ export async function createElectronServer(
 ) {
   const electronPath = getElectronPath();
   const hasElectron = existsSync(electronPath);
-  const mainEntry = configs.config?.main;
-  const preloads = configs.config?.preload;
+  const { path, config, dependencies } = (await loadConfigFile(
+    configs.inlineConfig,
+    configs.command
+  )) as {
+    path?: string | undefined;
+    config?: UserConfigs | undefined;
+    dependencies?: string[] | undefined;
+  };
+  const { main, preload } = config as UserConfigs;
   await ViteBuild({
-    build: {
-      reportCompressedSize: true,
-      rollupOptions: {
-        input: ["src/electron/electron.ts", "src/electron/preload.ts"],
-        output: [
-          {
-            dir: "dist/electron",
-            entryFileNames: "[name].js",
-          },
-        ],
-        plugins: [typescript()],
-      },
-    },
+    ...main
   });
   try {
     if (hasElectron) {
