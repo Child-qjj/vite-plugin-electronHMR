@@ -22,7 +22,7 @@ export async function copyConfigFile(configRoot: string): Promise<string> {
     resolvedPath
   );
   console.log();
-  return resolvedPath
+  return resolvedPath;
 }
 export async function loadConfigFile(
   inlineConfig: InlineConfig,
@@ -81,3 +81,7 @@ export const getElectronPath = function () {
     throw new Error("Electron uninstall");
   }
 };
+
+export function createExternals() {
+  return [];
+}

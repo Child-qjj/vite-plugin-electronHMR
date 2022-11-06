@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 import { existsSync, readFileSync } from "fs";
 import path from "path";
 import colors from "picocolors";
-import { build as ViteBuild, ViteDevServer } from "vite";
+import { build as ViteBuild, mergeConfig, ViteDevServer } from "vite";
 import { UserConfigs } from "../types/configurature";
 import { loadConfigFile } from "../utils/index";
 const getElectronPath = function () {
@@ -28,7 +28,7 @@ export async function createElectronServer(
 ) {
   const electronPath = getElectronPath();
   const hasElectron = existsSync(electronPath);
-  const { path, config, dependencies } = (await loadConfigFile(
+  const { config } = (await loadConfigFile(
     configs.inlineConfig,
     configs.command
   )) as {
@@ -37,8 +37,48 @@ export async function createElectronServer(
     dependencies?: string[] | undefined;
   };
   const { main, preload } = config as UserConfigs;
+  console.log(configs.mode);
+
+  const conf = mergeConfig(
+    {
+      build: {
+        reportCompressedSize: true,
+        sourcemap: true,
+        minify: configs.mode === "production",
+        // rollupOptions: {
+        //   input: "src/electron/electron.ts",
+        //   external: ["path", "fs", "electron"],
+        //   output: [
+        //     {
+        //       dir: "dist/electron",
+        //       exports: "named",
+        //       format: "cjs",
+        //       entryFileNames: "[name].js",
+        //     },
+        //   ],
+        // },
+      },
+    },
+    main
+  );
+  console.log(conf);
+
   await ViteBuild({
-    ...main
+    build: {
+      reportCompressedSize: true,
+      outDir: "dist/electron",
+      sourcemap: true,
+      emptyOutDir: false,
+      minify: configs.mode === "production",
+      lib: {
+        entry: "src/electron/electron.ts",
+        formats:['cjs'],
+        fileName:()=>'[name].js'
+      },
+      rollupOptions:{
+        external:['path','fs','electron']
+      }
+    },
   });
   try {
     if (hasElectron) {
