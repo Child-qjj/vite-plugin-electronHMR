@@ -2,28 +2,20 @@ export default {
   main: {
     build: {
       reportCompressedSize: true,
-      rollupOptions: {
-        input: "src/electron/electron.ts",
-        output: [
-          {
-            dir: "dist/electron",
-            entryFileNames: "[name].js",
-          },
-        ],
+      lib: {
+        entry: "src/electron/electron.ts",
+        formats: ["cjs"], //It's must be commonJS packages in electron now
+        fileName: () => "[name].js",
       },
     },
   },
   preload: {
     build: {
       reportCompressedSize: true,
-      rollupOptions: {
-        input: "src/electron/preload.ts",
-        output: [
-          {
-            dir: "dist/electron",
-            entryFileNames: "[name].js",
-          },
-        ],
+      lib: {
+        entry: "src/electron/preload.ts",
+        formats: ["cjs"], //It's must be commonJS packages in electron now
+        fileName: () => "[name].js",
       },
     },
   },

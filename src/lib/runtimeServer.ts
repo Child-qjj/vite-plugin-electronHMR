@@ -1,90 +1,32 @@
 import { spawn } from "child_process";
-import { existsSync, readFileSync } from "fs";
-import path from "path";
+import { existsSync } from "fs";
 import colors from "picocolors";
-import { build as ViteBuild, mergeConfig, ViteDevServer } from "vite";
+import {
+  build as ViteBuild,
+  mergeConfig,
+  UserConfig,
+  ViteDevServer,
+} from "vite";
 import { UserConfigs } from "../types/configurature";
-import { loadConfigFile } from "../utils/index";
-const getElectronPath = function () {
-  const electronModulePath = path.resolve(
-    process.cwd(),
-    "node_modules",
-    "electron"
-  );
-  const pathFile = path.join(electronModulePath, "path.txt");
-  let executablePath;
-  if (existsSync(pathFile)) {
-    executablePath = readFileSync(pathFile, "utf-8");
-  }
-  if (executablePath) {
-    return path.join(electronModulePath, "dist", executablePath);
-  } else {
-    throw new Error("Electron uninstall");
-  }
-};
-export async function createElectronServer(
-  server: ViteDevServer,
-  configs: any
-) {
+import {
+  createDefaultConfig,
+  getElectronPath,
+  loadConfigFile,
+} from "../utils/index";
+async function startElectronApp(args = [".", "--no-sandbox"]) {
   const electronPath = getElectronPath();
   const hasElectron = existsSync(electronPath);
-  const { config } = (await loadConfigFile(
-    configs.inlineConfig,
-    configs.command
-  )) as {
-    path?: string | undefined;
-    config?: UserConfigs | undefined;
-    dependencies?: string[] | undefined;
-  };
-  const { main, preload } = config as UserConfigs;
-  console.log(configs.mode);
-
-  const conf = mergeConfig(
-    {
-      build: {
-        reportCompressedSize: true,
-        sourcemap: true,
-        minify: configs.mode === "production",
-        // rollupOptions: {
-        //   input: "src/electron/electron.ts",
-        //   external: ["path", "fs", "electron"],
-        //   output: [
-        //     {
-        //       dir: "dist/electron",
-        //       exports: "named",
-        //       format: "cjs",
-        //       entryFileNames: "[name].js",
-        //     },
-        //   ],
-        // },
-      },
-    },
-    main
-  );
-  console.log(conf);
-
-  await ViteBuild({
-    build: {
-      reportCompressedSize: true,
-      outDir: "dist/electron",
-      sourcemap: true,
-      emptyOutDir: false,
-      minify: configs.mode === "production",
-      lib: {
-        entry: "src/electron/electron.ts",
-        formats:['cjs'],
-        fileName:()=>'[name].js'
-      },
-      rollupOptions:{
-        external:['path','fs','electron']
-      }
-    },
-  });
   try {
+    if (process.electron_process) {
+      process.electron_process.removeAllListeners();
+      process.electron_process.kill();
+    }
     if (hasElectron) {
-      spawn(electronPath, ["."], {
+      console.log(colors.green(`\nstart electron app...`));
+      process.electron_process = spawn(electronPath, args, {
         stdio: "inherit",
       });
+      process.electron_process.once("exit", process.exit);
     } else {
       console.error(
         colors.red(
@@ -95,5 +37,51 @@ export async function createElectronServer(
     }
   } catch (error) {
     console.log(error);
+  }
+}
+export async function createElectronServer(
+  server: ViteDevServer,
+  configs: any
+) {
+  const { config } = (await loadConfigFile(
+    configs.inlineConfig,
+    configs.command
+  )) as {
+    path?: string | undefined;
+    config?: UserConfigs | undefined;
+    dependencies?: string[] | undefined;
+  };
+  const { main, preload, exclude, include } = config as UserConfigs;
+  const configArray = [{ ...main, type: "main" }];
+  if (preload) {
+    configArray.push({ ...preload, type: "preload" });
+  }
+  for (const _config of configArray) {
+    if (_config) {
+      const resolvedConfig = createDefaultConfig(
+        {
+          exclude,
+          include,
+          outDir: configs.build.outDir,
+          isProduction: configs.mode === "production",
+        },
+        _config
+      );
+      await ViteBuild(
+        mergeConfig(
+          {
+            plugins: [
+              {
+                name: "start::electron",
+                closeBundle() {
+                  startElectronApp();
+                },
+              },
+            ],
+          } as UserConfig,
+          resolvedConfig
+        )
+      );
+    }
   }
 }

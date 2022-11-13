@@ -14,5 +14,5 @@
     "sourceMap": true,
     "noEmitOnError": true
   },
-  "include": ["src/*","build.config.ts","scripts/*"]
+  "include": ["src/*", "build.config.ts", "scripts/*", "src/types/electron-env.d.ts"]
 }

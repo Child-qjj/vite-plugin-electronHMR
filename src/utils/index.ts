@@ -1,6 +1,8 @@
 import fs from "fs";
+import { builtinModules, createRequire } from "module";
 import path from "path";
-import { InlineConfig, loadConfigFromFile } from "vite";
+import { InlineConfig, loadConfigFromFile, mergeConfig } from "vite";
+import { ExternalOptions } from "../types/configurature";
 export const DEFAULT_CONFIG_FILES = [
   "electron.config.js",
   "electron.config.mjs",
@@ -10,12 +12,12 @@ export const DEFAULT_CONFIG_FILES = [
   "electron.config.cts",
 ];
 export async function copyConfigFile(configRoot: string): Promise<string> {
-  let suffix = "js";
+  let suffix = ".js";
   if (fs.existsSync(path.resolve(configRoot, "tsconfig.json"))) {
-    suffix = "ts";
+    suffix = ".ts";
   }
   let filePath = "electron.config" + suffix;
-  let resolvedPath = path.resolve(configRoot, "electron.config.ts");
+  let resolvedPath = path.resolve(configRoot, filePath);
   console.log();
   fs.copyFileSync(
     path.resolve(__dirname, "../../electron.config.ts"),
@@ -31,7 +33,6 @@ export async function loadConfigFile(
   defaultMode = "development"
 ) {
   let config = inlineConfig;
-  let configFileDependencies: string[] = [];
   let mode = inlineConfig.mode || defaultMode;
   let resolvedPath: string | undefined;
   if (mode === "production") {
@@ -82,6 +83,39 @@ export const getElectronPath = function () {
   }
 };
 
-export function createExternals() {
-  return [];
+export function createDefaultConfig(options: ExternalOptions, userConfig: any) {
+  const {
+    exclude = [],
+    include = [],
+    isProduction = false,
+    outDir = "dist",
+  } = options;
+  const packagePath = path.resolve(process.cwd(), "package.json");
+  const require = createRequire(import.meta.url);
+  const pkg = require(packagePath);
+  let deps = Object.keys(pkg.dependencies || {});
+  if (include.length) {
+    deps = deps.concat(include);
+  }
+  if (exclude.length) {
+    deps = deps.filter((dep) => !exclude.includes(dep));
+  }
+  const defaultConfig: InlineConfig = {
+    build: {
+      watch: {},
+      minify: isProduction,
+      rollupOptions: {
+        external: [
+          ...new Set(
+            deps.concat(
+              builtinModules.concat(builtinModules.map((m) => `node:${m}`))
+            )
+          ),
+        ],
+      },
+      emptyOutDir: false,
+      outDir: outDir + "/electron",
+    },
+  };
+  return mergeConfig(defaultConfig, userConfig);
 }
